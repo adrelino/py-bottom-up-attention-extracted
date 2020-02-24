@@ -2,7 +2,17 @@
 
 Extracted diff of https://github.com/airsplay/py-bottom-up-attention/ and detectron2.
 
+**Previewing**
+The detectron2 system with *exact same* weight as the Caffe VG detection.
+
 ## Installation
+```
+git clone https://github.com/adrelino/py-bottom-up-attention-extracted.git
+cd py-bottom-up-attention-extracted
+# Install python libraries
+pip install -r requirements.txt	pip install -r requirements.txt
+```
+
 Install [detectron2](https://github.com/facebookresearch/detectron2.git)
 
 ## Demos
