@@ -26,9 +26,11 @@ from detectron2.config import get_cfg
 from detectron2.modeling.postprocessing import detector_postprocess
 from detectron2.modeling.roi_heads.fast_rcnn import FastRCNNOutputLayers, FastRCNNOutputs
 
+from detectron2_diff import add_detectron2_diff_config
+import detectron2_diff.modeling # noqa
 
 D2_ROOT = os.path.dirname(os.path.dirname(detectron2.__file__)) # Root of detectron2
-DATA_ROOT = os.getenv('COCO_IMG_ROOT', '/ssd-playpen/data/mscoco/images/')
+DATA_ROOT = os.getenv('COCO_IMG_ROOT', 'data/mscoco/')
 MIN_BOXES = 36
 MAX_BOXES = 36
 
@@ -151,7 +153,7 @@ def dump_features(writer, detector, pathXid):
         features = features.to('cpu')
 
         num_objects = len(instances)
-
+        #https://github.com/peteanderson80/bottom-up-attention/blob/master/tools/generate_tsv.py#L97
         item = {
             "img_id": img_id,
             "img_h": img.shape[0],
@@ -195,7 +197,7 @@ def extract_feat(outfile, detector, pathXid):
                 print(e)
                 break
             """
-
+#https://github.com/peteanderson80/bottom-up-attention/blob/master/tools/generate_tsv.py#L140
 def load_image_ids(img_root, split_dir):
     """images in the same directory are in the same split"""
     pathXid = []
@@ -241,8 +243,8 @@ def build_model():
         cfg.MODEL.WEIGHTS = "detectron2://COCO-Detection/faster_rcnn_R_101_C4_3x/138204752/model_final_298dad.pkl"
     elif args.weight == 'vg':
         cfg = get_cfg() # Renew the cfg file
-        cfg.merge_from_file(os.path.join(
-            D2_ROOT, "configs/VG-Detection/faster_rcnn_R_101_C4_caffemaxpool.yaml"))
+        add_detectron2_diff_config(cfg)
+        cfg.merge_from_file("configs/VG-Detection/faster_rcnn_R_101_C4_caffemaxpool.yaml")
         cfg.MODEL.RPN.POST_NMS_TOPK_TEST = 300
         cfg.MODEL.ROI_HEADS.NMS_THRESH_TEST = 0.6
         cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.2
@@ -250,7 +252,7 @@ def build_model():
         cfg.INPUT.MAX_SIZE_TEST = 1000
         cfg.MODEL.RPN.NMS_THRESH = 0.7
         # Find a model from detectron2's model zoo. You can either use the https://dl.fbaipublicfiles.... url, or use the following shorthand
-        cfg.MODEL.WEIGHTS = "http://nlp.cs.unc.edu/models/faster_rcnn_from_caffe.pkl"
+        cfg.MODEL.WEIGHTS = "data/faster_rcnn_from_caffe.pkl" #"http://nlp.cs.unc.edu/models/faster_rcnn_from_caffe.pkl"
     else:
         assert False, "no this weight"
     detector = DefaultPredictor(cfg)

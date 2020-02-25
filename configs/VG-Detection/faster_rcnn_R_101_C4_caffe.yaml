@@ -1,4 +1,4 @@
-_BASE_: "../Base-RCNN-C4.yaml"
+_BASE_: "Base-VG-Detection.yaml"
 MODEL:
   MASK_ON: False
   RESNETS:

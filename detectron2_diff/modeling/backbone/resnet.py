@@ -1,9 +1,15 @@
 #https://github.com/airsplay/py-bottom-up-attention/commit/c053e580da10da7e6639d3b26d2cc5b58207877a#diff-69978e00fc9e5d13821dd5d741cd8716
 
-from detectron2.modeling.backbone.resnet import BasicStem, Resnet
+import torch.nn.functional as F
+from detectron2.layers import FrozenBatchNorm2d
+from detectron2.modeling import BACKBONE_REGISTRY, ResNet, ResNetBlockBase, make_stage  #as in trident_backbone.py in detectron2
+from detectron2.modeling.backbone.resnet import BasicStem, BottleneckBlock, DeformBottleneckBlock
+
+__all__ = ["BasicStemCaffeeMaxPool", "build_resnet_backbone_caffe_maxpool"]
+
 
 class BasicStemCaffeeMaxPool(BasicStem):
-    def __init__(self, **kwargs, caffe_maxpool=False):
+    def __init__(self, caffe_maxpool=False, **kwargs):
         super().__init__(**kwargs)
         self.caffe_maxpool = caffe_maxpool
         if self.caffe_maxpool:
@@ -19,7 +25,7 @@ class BasicStemCaffeeMaxPool(BasicStem):
         return x
 
 @BACKBONE_REGISTRY.register()
-def build_resnet_backbone(cfg, input_shape):
+def build_resnet_backbone_caffe_maxpool(cfg, input_shape):
     """
     Create a ResNet instance from config.
 

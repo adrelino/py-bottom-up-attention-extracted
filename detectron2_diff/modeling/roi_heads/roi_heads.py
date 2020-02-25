@@ -1,5 +1,6 @@
 #https://github.com/airsplay/py-bottom-up-attention/commit/c053e580da10da7e6639d3b26d2cc5b58207877a#diff-3578095dcbc32448d58a08f0ccbdaf91
 
+from detectron2.modeling import ROI_HEADS_REGISTRY
 from detectron2.modeling.roi_heads.roi_heads import Res5ROIHeads
 
 @ROI_HEADS_REGISTRY.register()
