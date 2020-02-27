@@ -35,6 +35,7 @@ MIN_BOXES = 36
 MAX_BOXES = 36
 
 parser = argparse.ArgumentParser()
+parser.add_argument('--overwrite', action='store_true')
 parser.add_argument('--split', default='train2014', help='train2014, val2014')
 parser.add_argument('--batchsize', default=4, type=int, help='batch_size')
 parser.add_argument('--model', default='res5', type=str, help='options: "res4", "res5"; features come from)')
@@ -158,21 +159,28 @@ def dump_features(writer, detector, pathXid):
             "img_id": img_id,
             "img_h": img.shape[0],
             "img_w": img.shape[1], 
-            "objects_id": base64.b64encode(instances.pred_classes.numpy()).decode(),  # int64
-            "objects_conf": base64.b64encode(instances.scores.numpy()).decode(),  # float32
-            "attrs_id": base64.b64encode(np.zeros(num_objects, np.int64)).decode(),  # int64
-            "attrs_conf": base64.b64encode(np.zeros(num_objects, np.float32)).decode(),  # float32
+            #"objects_id": base64.b64encode(instances.pred_classes.numpy()).decode(),  # int64
+            #"objects_conf": base64.b64encode(instances.scores.numpy()).decode(),  # float32
+            #"attrs_id": base64.b64encode(np.zeros(num_objects, np.int64)).decode(),  # int64
+            #"attrs_conf": base64.b64encode(np.zeros(num_objects, np.float32)).decode(),  # float32
             "num_boxes": num_objects,
             "boxes": base64.b64encode(instances.pred_boxes.tensor.numpy()).decode(),  # float32
             "features": base64.b64encode(features.numpy()).decode()  # float32
         }
+        print("img_id:", img_id, "num_boxes:", num_objects)
+        #print("boxes");print(instances.pred_boxes.tensor.numpy())
+        #print("features");print(features.numpy())
 
         writer.writerow(item)
     
 
-FIELDNAMES = ["img_id", "img_h", "img_w", "objects_id", "objects_conf",
-              "attrs_id", "attrs_conf", "num_boxes", "boxes", "features"]
-def extract_feat(outfile, detector, pathXid):
+#FIELDNAMES = ["img_id", "img_h", "img_w", "objects_id", "objects_conf",
+#              "attrs_id", "attrs_conf", "num_boxes", "boxes", "features"]
+
+# as in https://github.com/peteanderson80/bottom-up-attention/blob/master/tools/generate_tsv.py#L34
+FIELDNAMES = ['img_id', 'img_w','img_h','num_boxes', 'boxes', 'features']
+
+def extract_feat(outfile, detector, pathXid, overwrite):
     # Check existing images in tsv file.
     wanted_ids = set([image_id[1] for image_id in pathXid])
     found_ids = set()
@@ -185,7 +193,14 @@ def extract_feat(outfile, detector, pathXid):
     
     # Extract features for missing images.
     missing_pathXid = list(filter(lambda x:x[1] in missing, pathXid))
-    with open(outfile, 'a') as tsvfile:
+
+    mode = 'a'
+    if overwrite:
+        mode = 'w'
+    else:
+        pathXid = missing_pathXid
+
+    with open(outfile, mode) as tsvfile:
         writer = csv.DictWriter(tsvfile, delimiter='\t', fieldnames=FIELDNAMES)
         for start in tqdm.tqdm(range(0, len(pathXid), args.batchsize)):
             pathXid_trunk = pathXid[start: start + args.batchsize]
@@ -203,7 +218,8 @@ def load_image_ids(img_root, split_dir):
     pathXid = []
     img_root = os.path.join(img_root, split_dir)
     for name in os.listdir(img_root):
-        idx = name.split(".")[0]
+        idx = name.split(".")[0] # "COCO_train2014_000000150367"
+        idx = str(int(idx.split("_")[2])) # "150367"  #needs to be string for set
         pathXid.append(
                 (
                     os.path.join(img_root, name),
@@ -252,7 +268,7 @@ def build_model():
         cfg.INPUT.MAX_SIZE_TEST = 1000
         cfg.MODEL.RPN.NMS_THRESH = 0.7
         # Find a model from detectron2's model zoo. You can either use the https://dl.fbaipublicfiles.... url, or use the following shorthand
-        cfg.MODEL.WEIGHTS = "data/faster_rcnn_from_caffe.pkl" #"http://nlp.cs.unc.edu/models/faster_rcnn_from_caffe.pkl"
+        cfg.MODEL.WEIGHTS = "http://nlp.cs.unc.edu/models/faster_rcnn_from_caffe.pkl" #"data/faster_rcnn_from_caffe.pkl" #
     else:
         assert False, "no this weight"
     detector = DefaultPredictor(cfg)
@@ -260,5 +276,6 @@ def build_model():
 
 if __name__ == "__main__":
     pathXid = load_image_ids(DATA_ROOT, args.split)     # Get paths and ids
+    print("pathXid",pathXid)
     detector = build_model()
-    extract_feat('data/mscoco_imgfeat/%s_d2obj36_batch.tsv' % args.split, detector, pathXid)
+    extract_feat('data/mscoco_imgfeat/%s_d2obj36_batch.tsv' % args.split, detector, pathXid, args.overwrite)
